@@ -2,7 +2,7 @@ import cv2, time
 import numpy as np
 from datetime import datetime
 
-class MotionDetectorContour:
+class MotionDetector:
     def __init__(self, src):
         self.src            = src
         self.window_name    = "Window - {}".format(src)
@@ -11,6 +11,7 @@ class MotionDetectorContour:
         self.prev_frame     = None
         self.moving_avg     = None
         self.duration       = 0
+        self.run()
 
     def run(self):
         while True:
@@ -62,10 +63,10 @@ class MotionDetectorContour:
         self.prev_frame = cv2.convertScaleAbs(self.moving_avg)
 
         # Show Frames, this needs to move out
-        self.show_frame(gray, "Gray Frame")
-        self.show_frame(thresh_frame, "Threshold Frame")
+        #self.show_frame(gray, "Gray Frame")
+        #self.show_frame(thresh_frame, "Threshold Frame")
         self.show_frame(frame, "Original Frame")
-        self.show_frame(self.prev_frame, "previous Frame")
+        #self.show_frame(self.prev_frame, "previous Frame")
 
         self.frame_record(frame)
 
@@ -77,7 +78,7 @@ class MotionDetectorContour:
         width = frame.shape[1]
         height = frame.shape[0]
         self.duration = duration
-        self.video_out = cv2.VideoWriter(filename, CV_FOURCC('M','P','G','4'), 25, (width, height))
+        self.video_out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc('m','p','4','v'), 25, (width, height))
 
     def frame_record(self, frame):
         if self.duration < 1:
@@ -92,5 +93,4 @@ class MotionDetectorContour:
 
 if __name__=="__main__":
     url = "http://192.168.50.249:8080/video"
-    t = MotionDetectorContour(url)
-    t.run()
+    t = MotionDetector(url)
