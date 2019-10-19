@@ -11,6 +11,7 @@ class MotionDetector:
         self.prev_frame     = None
         self.moving_avg     = None
         self.duration       = 0
+        self.is_recording   = False
         self.run()
 
     def run(self):
@@ -51,10 +52,13 @@ class MotionDetector:
         contours, hierachy = cv2.findContours(thresh_frame.copy(),
             cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         for contour in contours:
-            if cv2.contourArea(contour) < 10000:
+            if cv2.contourArea(contour) < 1000:
                 continue
-            #motion = 1
-            self.init_record('video-{}.mp4'.format(time.time()), frame, 50)
+            ## MOTION HAS BEEN TRIGGERED
+            fps = 15
+            seconds = 3
+            self.duration = seconds * fps
+            self.init_record('video-{}.mp4'.format(time.time()), frame)
             (x, y, w, h) = cv2.boundingRect(contour)
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
 
@@ -72,20 +76,23 @@ class MotionDetector:
 
         return frame 
 
-    def init_record(self, filename, frame, duration):
-        if self.duration > 0:
+    def init_record(self, filename, frame):
+        if self.is_recording:
             return
         width = frame.shape[1]
         height = frame.shape[0]
-        self.duration = duration
-        self.video_out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc('m','p','4','v'), 25, (width, height))
+        fps = 15
+        self.video_out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc('m','p','4','v'), fps, (width, height))
+        self.is_recording = True
 
     def frame_record(self, frame):
-        if self.duration < 1:
+        if not self.is_recording:
             return
         self.video_out.write(frame)
-        if self.duration == 1:
+        if self.duration == 0:
+            self.is_recording = False
             self.video_out.write(frame)
+            self.video_out.release()
         self.duration -= 1
 
     def show_frame(self, frame, win_title):
