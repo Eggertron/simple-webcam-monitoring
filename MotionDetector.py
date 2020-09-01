@@ -12,14 +12,18 @@ class MotionDetector:
         self.moving_avg     = None
         self.duration       = 0
         self.is_recording   = False
+        self.fps            = 3
         self.run()
 
     def run(self):
+        frame_counter = 0
         while True:
             # Grab Frame from capture source
             check, frame = self.cap.read()
 
             #print(check)
+            frame_counter += 1
+            print("Frames processed: {}".format(frame_counter))
 
             # Process Frame
             #frame = cv2.resize(frame, None, fx=0.5, fy=0.5)
@@ -55,7 +59,7 @@ class MotionDetector:
             if cv2.contourArea(contour) < 1000:
                 continue
             ## MOTION HAS BEEN TRIGGERED
-            fps = 15
+            fps = self.fps
             seconds = 3
             self.duration = seconds * fps
             self.init_record('video-{}.mp4'.format(time.time()), frame)
@@ -81,7 +85,7 @@ class MotionDetector:
             return
         width = frame.shape[1]
         height = frame.shape[0]
-        fps = 15
+        fps = self.fps
         self.video_out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc('m','p','4','v'), fps, (width, height))
         self.is_recording = True
 
