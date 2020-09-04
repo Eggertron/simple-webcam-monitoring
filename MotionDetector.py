@@ -12,22 +12,24 @@ class MotionDetector:
         self.moving_avg     = None
         self.duration       = 0
         self.is_recording   = False
-        self.fps            = 3
+        self.fps            = 2
         self.run()
 
     def run(self):
         frame_counter = 0
+        proc_frame = None
         while True:
             # Grab Frame from capture source
             check, frame = self.cap.read()
 
-            #print(check)
+            print(check)
             frame_counter += 1
             print("Frames processed: {}".format(frame_counter))
 
             # Process Frame
             #frame = cv2.resize(frame, None, fx=0.5, fy=0.5)
-            proc_frame = self.process_frame(frame)
+            if frame is not None:
+                proc_frame = self.process_frame(frame)
             if proc_frame is None:
                 continue
 
@@ -103,5 +105,5 @@ class MotionDetector:
         cv2.imshow("{} - {}".format(self.window_name, win_title), frame)
 
 if __name__=="__main__":
-    url = "http://192.168.50.249:8080/video"
+    url = "http://192.168.50.241:8888/video?.mjpg"
     t = MotionDetector(url)
