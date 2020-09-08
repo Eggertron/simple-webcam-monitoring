@@ -105,3 +105,10 @@ venv.bak/
 
 # build packages
 *.tgz
+
+# videos/photos
+*.mp4
+*.jpg
+
+# vim
+*.swp

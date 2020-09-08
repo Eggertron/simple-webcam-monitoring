@@ -1,6 +1,17 @@
-import cv2, time
+import cv2, time, threading
 import numpy as np
 from datetime import datetime
+from flask import (
+    Flask,
+    Response,
+    render_template
+)
+
+# initialize the output frame and a lock used to ensure thread-safe
+# exchanges of the output frames (useful when multiple browsers/tabs
+# are viewing the stream)
+outputFrame = None
+lock = threading.Lock()
 
 class MotionDetector:
     def __init__(self, src):
@@ -38,6 +49,7 @@ class MotionDetector:
                break
 
     def process_frame(self, frame):
+        global outputFrame, lock
         # Change to gray scale and remove minor
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         gray = cv2.GaussianBlur(gray, (21, 21), 0)
@@ -80,6 +92,11 @@ class MotionDetector:
 
         self.frame_record(frame)
 
+        # acquire the lock, set the output frame, and release the
+	# lock
+        with lock:
+            outputFrame = frame.copy()
+
         return frame 
 
     def init_record(self, filename, frame):
@@ -104,6 +121,48 @@ class MotionDetector:
     def show_frame(self, frame, win_title):
         cv2.imshow("{} - {}".format(self.window_name, win_title), frame)
 
+### Flask
+
+# initialize a flask object
+app = Flask(__name__)
+
+@app.route("/")
+def index():
+	# return the rendered template
+	return render_template("index.html")
+
+@app.route("/video_feed")
+def video_feed():
+	# return the response generated along with the specific media
+	# type (mime type)
+	return Response(generate(),
+		mimetype = "multipart/x-mixed-replace; boundary=frame")
+
+def generate():
+	# grab global references to the output frame and lock variables
+	global outputFrame, lock
+	# loop over frames from the output stream
+	while True:
+		# wait until the lock is acquired
+		with lock:
+			# check if the output frame is available, otherwise skip
+			# the iteration of the loop
+			if outputFrame is None:
+				continue
+			# encode the frame in JPEG format
+			(flag, encodedImage) = cv2.imencode(".jpg", outputFrame)
+			# ensure the frame was successfully encoded
+			if not flag:
+				continue
+		# yield the output frame in the byte format
+		yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + 
+			bytearray(encodedImage) + b'\r\n')
+
+### End of Flask
 if __name__=="__main__":
-    url = "http://192.168.50.241:8888/video?.mjpg"
+    #url = "http://192.168.50.241:8888/video?.mjpg"
+    url = "0"
     t = MotionDetector(url)
+    # start the flask app
+    app.run(host='0.0.0.0', port='8888', debug=True,
+        threaded=True, use_reloader=False)
