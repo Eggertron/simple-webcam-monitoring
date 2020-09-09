@@ -17,6 +17,7 @@ record_path: ./
 pixel_diff_ratio: 0.1
 pixel_detect_thresh: 25
 storage_min_mb: 1000
+debug: False
 '''
 try:
     with open(config_file, 'r') as f:
@@ -36,6 +37,7 @@ try:
     pixel_diff_ratio = configs['pixel_diff_ratio']
     pixel_detect_thresh = configs['pixel_detect_thresh']
     storage_min_mb = configs['storage_min_mb']
+    debug = configs['debug']
 except Exception as e:
     print(e)
     print("Error: unable to load {}. Might be corrupt.".format(config_file))
@@ -79,9 +81,15 @@ def generate():
 	        bytearray(encoded_image) + b'\r\n')
         time.sleep(sleep_time)
 
+def debug_print(msg):
+    global debug
+    if debug:
+        print("DEBUG: {}".format(msg))
+
 def record_frame(recorder, frame, close=False):
     recorder.write(frame)
     if close:
+        debug_print("Recording saved.")
         recorder.release()
 
 def storage_rotate(prefix):
@@ -93,11 +101,11 @@ def storage_rotate(prefix):
 
 def delete_old_video(prefix):
     global record_path
-    print("Making room!")
+    debug_print("Making room!")
     fp_list = [fp for fp in os.listdir(record_path) if prefix in fp]
     print(fp_list)
     fp_to_del = min(fp_list)
-    print("DEBUG: Removing video {}".format(fp_to_del))
+    debug_print("Removing video {}".format(fp_to_del))
     os.remove("{}{}".format(record_path, fp_to_del))
 
 def init_record(frame, prefix):
@@ -106,13 +114,14 @@ def init_record(frame, prefix):
     width = frame.shape[1]
     height = frame.shape[0]
     storage_rotate(prefix)
+    debug_print("Motion Capture started: {}".format(filename))
     return cv2.VideoWriter(filename,
             cv2.VideoWriter_fourcc('m', 'p', '4', 'v'),
             fps,
             (width, height))
 
 def start_cap(src):
-    global fps, lock, out_frames, record_duration, pixel_detect_thresh, pixel_diff_ratio
+    global debug, fps, lock, out_frames, record_duration, pixel_detect_thresh, pixel_diff_ratio
     cap = cv2.VideoCapture(src)
     is_show = True
     sleep_time = 1/fps
@@ -121,6 +130,7 @@ def start_cap(src):
     diff_frame = None
     recorder = None
     rframe_count = 0
+    min_pixels_trigger = None
     # first 6 chars of hash for file naming prefix
     prefix = hashlib.sha1(str(src).encode("UTF-8")).hexdigest()[:6]
     while is_show:
@@ -130,22 +140,27 @@ def start_cap(src):
             (status, frame) = cap.read()
 
         if status:
+            if min_pixels_trigger is None:
+                min_pixels_trigger = frame.size * pixel_diff_ratio
+                debug_print("Setting min_pixels_trigger to {}".format(min_pixels_trigger))
             if prev_frame is not None:
                 out_frames[str(src)] = frame.copy()
                 diff_frame = cv2.absdiff(
                         cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY),
                         cv2.cvtColor(prev_frame, cv2.COLOR_BGR2GRAY)
                         )
-                diff_frame = cv2.threshold(diff_frame, pixel_detect_thresh, 150, cv2.THRESH_BINARY)[1]
-                white_ratio = cv2.countNonZero(diff_frame) / diff_frame.size
-                if white_ratio > pixel_diff_ratio:
+                diff_frame = cv2.threshold(diff_frame, pixel_detect_thresh, 255, cv2.THRESH_BINARY)[1]
+                detected_pixels = cv2.countNonZero(diff_frame)
+                if   detected_pixels > min_pixels_trigger:
+                    debug_print("Motion Detected! Detected Pixels Ratio: {}".format(detected_pixels))
                     if recorder is None:
                         recorder = init_record(frame, prefix)
                         rframe_count = record_duration * fps
             #cv2.imshow('frame {}'.format(src), frame)
-            #if diff_frame is not None:
-            #    cv2.imshow('diff {}'.format(src), diff_frame)
+            if diff_frame is not None and debug:
+                cv2.imshow('diff {}'.format(src), diff_frame)
             if recorder is not None:
+                debug_print("Frames left to capture: {}".format(rframe_count))
                 if rframe_count < 1:
                     record_frame(recorder, frame, True)
                     recorder = None
