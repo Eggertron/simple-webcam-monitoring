@@ -25,7 +25,8 @@ except Exception as e:
     with open(config_file, 'w') as f:
         print("Error: {0} not found. Creating a default {0}".format(config_file))
         f.write(default_settings)
-    configs = yaml.load(default_settings, Loader=yaml.FullLoader)
+        print("INFO: Please check {} and restart.".format(config_file))
+        exit(1)
 
 try:
     stream_sources = configs['stream_sources']

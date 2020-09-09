@@ -36,4 +36,4 @@ git clone https://github.com/opencv/opencv.git \
     && make install
 
 # package it
-tar --transform 's/dist-packages/site-packages/' czvf /output/opencv-bin.tgz /opencv-out/bin /opencv-out/lib opencv-out/include opencv-out/share
+cd /opencv-out && tar --transform='s/dist-packages/site-packages/' czvf /output/opencv-bin.tgz bin lib include share
