@@ -3,7 +3,7 @@ Very quick and dirty IP Webcam monitoring to reuse old android phones.
 
 ## Setup
 You'll need to have python installed in your system. To do that you can run
-this script, [Python Setup Script](https://github.com/Eggertron/python-setup]). After the script has
+this script, [Python Setup Script](https://github.com/Eggertron/python-setup). After the script has
 installed pyenv you can run the following command to setup your Python version and environment,
 ```
 pyenv install 3.8.5
@@ -11,6 +11,12 @@ pyenv virtualenv 3.8.5 webcam-env
 pyenv local webcam-env
 pip install --upgrade pip
 pip install -r requirements.txt
+```
+
+#### System Dependencies
+You'll need to satisfy some system dependencies for opencv to work
+```
+sudo apt-get install -y ffmpeg libopenexr-dev
 ```
 
 ### Build OpenCV

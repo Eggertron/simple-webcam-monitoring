@@ -25,6 +25,8 @@ pixel_detect_thresh: 25
 storage_min_mb: 1000
 debug: False
 web_port: 8080
+width: 640
+height: 480
 '''
 streams_optional_keys = [
     "name",
