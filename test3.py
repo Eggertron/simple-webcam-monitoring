@@ -1,4 +1,4 @@
-import os, cv2, time, threading, yaml, hashlib, shutil
+import os, cv2, time, threading, yaml, hashlib, shutil, datetime
 from flask import (
     Flask,
     Response,
@@ -10,15 +10,31 @@ config_file = "config.yaml"
 default_settings = '''---
 fps: 10
 record_duration: 5
-stream_sources:
-  - 0
-  - "http://192.168.50.241:8888/video"
+streams:
+  - source: 2
+    name: usb-cam
+    fps: 10
+    record_duration: 5
+    pixels_diff_ratio: 0.001
+    pixel_detect_thresh: 25
+  - source: 0
+    name: front-face
 record_path: ./
-pixel_diff_ratio: 0.1
+pixels_diff_ratio: 0.001
 pixel_detect_thresh: 25
 storage_min_mb: 1000
 debug: False
+web_port: 8080
 '''
+streams_optional_keys = [
+    "name",
+    "fps",
+    "record_duration",
+    "pixels_diff_ratio",
+    "pixel_detect_thresh"
+]
+default_keys = {}
+
 try:
     with open(config_file, 'r') as f:
         configs = yaml.load(f, Loader=yaml.FullLoader)
@@ -30,14 +46,15 @@ except Exception as e:
         exit(1)
 
 try:
-    stream_sources = configs['stream_sources']
-    fps = configs['fps']
-    record_duration = configs['record_duration'] # seconds
-    record_path = configs['record_path']
-    pixel_diff_ratio = configs['pixel_diff_ratio']
-    pixel_detect_thresh = configs['pixel_detect_thresh']
-    storage_min_mb = configs['storage_min_mb']
-    debug = configs['debug']
+    default_keys['fps']                 = configs['fps']
+    default_keys['record_duration']     = configs['record_duration'] # seconds
+    default_keys['pixels_diff_ratio']   = configs['pixels_diff_ratio']
+    default_keys['pixel_detect_thresh'] = configs['pixel_detect_thresh']
+    streams                             = configs['streams']
+    storage_min_mb                      = configs['storage_min_mb']
+    record_path                         = configs['record_path']
+    debug                               = configs['debug']
+    web_port                            = configs['web_port']
 except Exception as e:
     print(e)
     print("Error: unable to load {}. Might be corrupt.".format(config_file))
@@ -46,6 +63,9 @@ except Exception as e:
 # first record_path
 if not record_path.endswith("/"):
     record_path = "{}/".format(record_path)
+
+# Set Global Vars
+fps = default_keys['fps']
 storage_min_bytes = storage_min_mb * 1000 * 1000
 out_frames = {}
 lock = threading.Lock()
@@ -110,7 +130,8 @@ def delete_old_video(prefix):
 
 def init_record(frame, prefix):
     global fps, record_path
-    filename = "{}{}-{}.mp4".format(record_path, prefix, time.time())
+    suffix = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    filename = "{}{}-{}.mp4".format(record_path, prefix, suffix)
     width = frame.shape[1]
     height = frame.shape[0]
     storage_rotate(prefix)
@@ -120,8 +141,14 @@ def init_record(frame, prefix):
             fps,
             (width, height))
 
-def start_cap(src):
-    global debug, fps, lock, out_frames, record_duration, pixel_detect_thresh, pixel_diff_ratio
+def start_cap(stream):
+    global debug, lock, out_frames
+    src = stream['source']
+    record_duration = stream['record_duration']
+    pixel_detect_thresh = stream['pixel_detect_thresh']
+    pixel_diff_ratio = stream['pixels_diff_ratio']
+    fps = stream['fps']
+    prefix = stream['name']
     cap = cv2.VideoCapture(src)
     is_show = True
     sleep_time = 1/fps
@@ -131,8 +158,6 @@ def start_cap(src):
     recorder = None
     rframe_count = 0
     min_pixels_trigger = None
-    # first 6 chars of hash for file naming prefix
-    prefix = hashlib.sha1(str(src).encode("UTF-8")).hexdigest()[:6]
     while is_show:
         if cap.isOpened():
             if frame is not None:
@@ -180,7 +205,13 @@ def start_cap(src):
 
 
 if __name__ == "__main__":
-    for stream in stream_sources:
+    for stream in streams:
+        for key in streams_optional_keys:
+            if key not in stream:
+                if key == 'name':
+                    stream[key] = "video-{}".format(hashlib.sha1(str(src).encode("UTF-8")).hexdigest()[:6])
+                else:
+                    stream[key] = default_keys[key]
         threading.Thread(target=start_cap, args=(stream,)).start()
         out_frames[str(stream)] = None
-    app.run(host="0.0.0.0", port=8888, debug=True, threaded=True, use_reloader=False)
+    app.run(host="0.0.0.0", port=web_port, debug=True, threaded=True, use_reloader=False)
