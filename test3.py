@@ -71,6 +71,8 @@ fps = default_keys['fps']
 storage_min_bytes = storage_min_mb * 1000 * 1000
 out_frames = {}
 lock = threading.Lock()
+video_cap_retries = 20
+video_cap_sleep = 5
 
 app = Flask(__name__)
 
@@ -108,6 +110,15 @@ def debug_print(msg):
     if debug:
         print("DEBUG: {}".format(msg))
 
+def info_print(msg):
+    print("INFO: {}".format(msg))
+
+def warn_print(msg):
+    print("WARN: {}".format(msg))
+
+def error_print(msg):
+    print("ERROR: {}".format(msg))
+
 def record_frame(recorder, frame, close=False):
     recorder.write(frame)
     if close:
@@ -143,6 +154,23 @@ def init_record(frame, prefix):
             fps,
             (width, height))
 
+def get_video_capture(src):
+    global video_cap_retries, video_cap_sleep
+    retries = 0
+    info_print("Connecting to Capture Device...")
+    while retries < video_cap_retries:
+        cap = cv2.VideoCapture(src)
+        if cap.isOpened():
+            info_print("Connected to {} successfully.".format(src))
+            return cap
+        else:
+            retries += 1
+            warn_print("Unable to connect to {}".format(src))
+            info_print("Retry connection: {}".format(retries))
+            time.sleep(video_cap_sleep)
+    error_print("Permanant failure to connect with {}".format(src))
+    exit(1)
+
 def start_cap(stream):
     global debug, lock, out_frames
     src = stream['source']
@@ -151,7 +179,7 @@ def start_cap(stream):
     pixel_diff_ratio = stream['pixels_diff_ratio']
     fps = stream['fps']
     prefix = stream['name']
-    cap = cv2.VideoCapture(src)
+    cap = get_video_capture(src)
     is_show = True
     sleep_time = 1/fps
     frame = None
@@ -160,11 +188,16 @@ def start_cap(stream):
     recorder = None
     rframe_count = 0
     min_pixels_trigger = None
+    status = None
     while is_show:
-        if cap.isOpened():
-            if frame is not None:
-                prev_frame = frame
-            (status, frame) = cap.read()
+        try:
+            if cap.isOpened():
+                if frame is not None:
+                    prev_frame = frame
+                (status, frame) = cap.read()
+        except Exception as e:
+            info_print("Lost connection to {}.\nAttempting to reestablish connection...".format(src))
+            cap = get_video_capture(src)
 
         if status:
             if min_pixels_trigger is None:
@@ -185,7 +218,7 @@ def start_cap(stream):
                         rframe_count = record_duration * fps
             #cv2.imshow('frame {}'.format(src), frame)
             if diff_frame is not None and debug:
-                cv2.imshow('diff {}'.format(src), diff_frame)
+                cv2.imshow('diff {}'.format(prefix), diff_frame)
             if recorder is not None:
                 debug_print("Frames left to capture: {}".format(rframe_count))
                 if rframe_count < 1:
@@ -208,6 +241,7 @@ def start_cap(stream):
 
 if __name__ == "__main__":
     for stream in streams:
+        src = stream['source']
         for key in streams_optional_keys:
             if key not in stream:
                 if key == 'name':
@@ -215,5 +249,5 @@ if __name__ == "__main__":
                 else:
                     stream[key] = default_keys[key]
         threading.Thread(target=start_cap, args=(stream,)).start()
-        out_frames[str(stream)] = None
+        out_frames[str(src)] = None
     app.run(host="0.0.0.0", port=web_port, debug=True, threaded=True, use_reloader=False)
