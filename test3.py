@@ -156,6 +156,11 @@ def init_record(frame, prefix):
             fps,
             (width, height))
 
+def set_capture_res(cap, x,y):
+    # this should only be called if capture source is an Integer
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, int(x))
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, int(y))
+
 def resize_frame(frame, width=None, height=None):
     # Resize only if needed
     if width is None and height is None:
@@ -183,13 +188,16 @@ def resize_frame(frame, width=None, height=None):
         return cv2.resize(frame, (new_width, height), interpolation=cv2.INTER_LINEAR)
 
 def get_video_capture(src):
-    global video_cap_retries, video_cap_sleep
+    global video_cap_retries, width, height, video_cap_sleep
     retries = 0
     info_print("Connecting to Capture Device...")
     while retries < video_cap_retries:
         cap = cv2.VideoCapture(src)
         if cap.isOpened():
+            if isinstance(src, int) and width is not None and height is not None:
+                set_capture_res(cap, width, height)
             info_print("Connected to {} successfully.".format(src))
+            info_print("{} cap res set to {}x{}".format(src, width, height))))
             return cap
         else:
             retries += 1
