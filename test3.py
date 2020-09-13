@@ -57,6 +57,8 @@ try:
     record_path                         = configs['record_path']
     debug                               = configs['debug']
     web_port                            = configs['web_port']
+    width                               = configs['width']
+    height                              = configs['height']
 except Exception as e:
     print(e)
     print("Error: unable to load {}. Might be corrupt.".format(config_file))
@@ -154,6 +156,32 @@ def init_record(frame, prefix):
             fps,
             (width, height))
 
+def resize_frame(frame, width=None, height=None):
+    # Resize only if needed
+    if width is None and height is None:
+        return frame
+
+    # check image size against desired width and height
+    (frame_height, frame_width) = frame.shape[:2]
+
+    # return image if below the max dimensions
+    if (width is None or (width is not None and frame_width <= width)) and (height is None or (height is not None and frame_height <= width)):
+        return frame
+
+    # width is priority for our use case
+    if width is not None and frame_width > width:
+        r = width / float(frame_width)
+        new_height = int(r * frame_height)
+        debug_print("Resizing frame to {}x{}".format(width, new_height))
+        return cv2.resize(frame, (width, new_height), interpolation=cv2.INTER_LINEAR)
+
+    # height is secondary
+    if height is not None and frame_height > height:
+        r = height / float(frame_height)
+        new_width = int(r * frame_width)
+        debug_print("Resizing frame to {}x{}".format(new_width, height))
+        return cv2.resize(frame, (new_width, height), interpolation=cv2.INTER_LINEAR)
+
 def get_video_capture(src):
     global video_cap_retries, video_cap_sleep
     retries = 0
@@ -172,7 +200,7 @@ def get_video_capture(src):
     exit(1)
 
 def start_cap(stream):
-    global debug, lock, out_frames
+    global width, height,debug, lock, out_frames
     src = stream['source']
     record_duration = stream['record_duration']
     pixel_detect_thresh = stream['pixel_detect_thresh']
@@ -195,6 +223,7 @@ def start_cap(stream):
                 if frame is not None:
                     prev_frame = frame
                 (status, frame) = cap.read()
+                frame = resize_frame(frame, width, height)
         except Exception as e:
             info_print("Lost connection to {}.\nAttempting to reestablish connection...".format(src))
             cap = get_video_capture(src)
