@@ -145,8 +145,15 @@ def delete_old_video(prefix):
 
 def init_record(frame, prefix):
     global fps, record_path
-    suffix = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    filename = "{}{}-{}.mp4".format(record_path, prefix, suffix)
+    date_now = datetime.datetime.now()
+    suffix = date_now.strftime("%Y-%m-%d-%H-%M-%S")
+    year = date_now.strftime("%Y")
+    month = date_now.strftime("%m")
+    day = date_now.strftime("%d")
+    full_record_path = "{}{}/{}/{}/".format(record_path, year, month, day)
+    if not os.path.exists(full_record_path):
+        os.makedirs(full_record_path)
+    filename = "{}{}-{}.mp4".format(full_record_path, prefix, suffix)
     width = frame.shape[1]
     height = frame.shape[0]
     storage_rotate(prefix)
@@ -197,7 +204,7 @@ def get_video_capture(src):
             if isinstance(src, int) and width is not None and height is not None:
                 set_capture_res(cap, width, height)
             info_print("Connected to {} successfully.".format(src))
-            info_print("{} cap res set to {}x{}".format(src, width, height))))
+            info_print("{} cap res set to {}x{}".format(src, width, height))
             return cap
         else:
             retries += 1
