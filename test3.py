@@ -150,7 +150,7 @@ def init_record(frame, prefix):
     year = date_now.strftime("%Y")
     month = date_now.strftime("%m")
     day = date_now.strftime("%d")
-    full_record_path = "{}{}/{}/{}/".format(record_path, year, month, day)
+    full_record_path = "{}{}/{}/{}/{}/".format(record_path, year, month, day, prefix)
     if not os.path.exists(full_record_path):
         os.makedirs(full_record_path)
     filename = "{}{}-{}.mp4".format(full_record_path, prefix, suffix)
