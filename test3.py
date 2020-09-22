@@ -2,8 +2,10 @@ import os, cv2, time, threading, yaml, hashlib, shutil, datetime
 from flask import (
     Flask,
     Response,
+    send_file,
     render_template
 )
+from glob import glob
 
 # Read Settings file
 config_file = "config.yaml"
@@ -86,6 +88,49 @@ def index():
 def video_feed():
     return Response(generate(),
         mimetype = "multipart/x-mixed-replace; boundary=frame")
+
+@app.route("/download")
+def download_file():
+    path = "/tmp/sample.txt"
+    return send_file(path, as_attachment=True)
+
+@app.route("/list_recordings")
+def list_recordings():
+    global record_path
+    path_list = [y for x in os.walk(record_path) for y in glob(os.path.join(x[0], '*.mp4'))]
+    path_tree = pathlist2pathtree(path_list)
+    dir_tree_str = pathtree2html(path_tree)
+    return render_template("list_recordings.html", dir_tree_str=dir_tree_str)
+    
+def pathtree2html(path_tree, attr='id="myUL"'):
+    result = '<ul {}>'.format(attr)
+    for key in path_tree.keys():
+        result += "<li>"
+        if key.endswith("mp4"):
+            result += '<a href="{}">{}</a></li>'.format(path_tree[key], key)
+            continue
+        result += '<span class="caret">{}</span>'.format(key)
+        result += pathtree2html(path_tree[key], attr='class="nested"')
+        result += "</li>"
+    result += "</ul>"
+    return result
+
+
+def pathlist2pathtree(path_list):
+    global record_path
+    path_tree = {}
+    for path in path_list:
+        path = path.replace(record_path, '')
+        pointer = path_tree
+        for name in path.split("/"):
+            if name.endswith(".mp4"):
+                pointer[name] = record_path + path
+                continue
+            elif name not in pointer:
+                pointer[name] = {}
+            pointer = pointer[name]
+    return path_tree
+
 
 def generate():
     global fps, lock, out_frames
