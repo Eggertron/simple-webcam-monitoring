@@ -1,8 +1,9 @@
-import os, cv2, time, threading, yaml, hashlib, shutil, datetime
+import json, os, cv2, time, threading, yaml, hashlib, shutil, datetime
 from flask import (
     Flask,
     Response,
     send_file,
+    request,
     render_template
 )
 from glob import glob
@@ -89,9 +90,16 @@ def video_feed():
     return Response(generate(),
         mimetype = "multipart/x-mixed-replace; boundary=frame")
 
-@app.route("/download")
+@app.route("/download", methods=['GET'])
 def download_file():
-    path = "/tmp/sample.txt"
+    global record_path
+    filename = request.args.get('file')
+    filename_split = filename.split("-")
+    day = filename_split[-4]
+    month = filename_split[-5]
+    year = filename_split[-6]
+    stream_name = filename.split("-" + year)[0]
+    path = "{}{}/{}/{}/{}/{}".format(record_path, year, month, day, stream_name, filename)
     return send_file(path, as_attachment=True)
 
 @app.route("/list_recordings")
@@ -107,7 +115,7 @@ def pathtree2html(path_tree, attr='id="myUL"'):
     for key in path_tree.keys():
         result += "<li>"
         if key.endswith("mp4"):
-            result += '<a href="{}">{}</a></li>'.format(path_tree[key], key)
+            result += '<a href="/download?file={}">{}</a></li>'.format(key, key)
             continue
         result += '<span class="caret">{}</span>'.format(key)
         result += pathtree2html(path_tree[key], attr='class="nested"')
