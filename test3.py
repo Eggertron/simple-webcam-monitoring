@@ -298,7 +298,7 @@ def start_cap(stream):
 
         if status:
             if min_pixels_trigger is None:
-                min_pixels_trigger = frame.size * pixel_diff_ratio
+                min_pixels_trigger = width * height * pixel_diff_ratio
                 debug_print("Setting min_pixels_trigger to {}".format(min_pixels_trigger))
             if prev_frame is not None:
                 out_frames[str(src)] = frame.copy()
@@ -309,7 +309,7 @@ def start_cap(stream):
                 diff_frame = cv2.threshold(diff_frame, pixel_detect_thresh, 255, cv2.THRESH_BINARY)[1]
                 detected_pixels = cv2.countNonZero(diff_frame)
                 if   detected_pixels > min_pixels_trigger:
-                    debug_print("Motion Detected! Detected Pixels Ratio: {}".format(detected_pixels))
+                    debug_print("Motion Detected! Detected Pixels Ratio: {}:{}".format(detected_pixels, min_pixels_trigger))
                     if recorder is None:
                         recorder = init_record(frame, prefix)
                         rframe_count = record_duration * fps
