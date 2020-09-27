@@ -228,6 +228,19 @@ def set_capture_res(cap, x,y):
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, int(x))
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, int(y))
 
+def add_frame_border(frame, color):
+    border_size = 3
+    frame = cv2.copyMakeBorder(
+        frame,
+        top=border_size,
+        bottom=border_size,
+        left=border_size,
+        right=border_size,
+        borderType=cv2.BORDER_CONSTANT,
+        value=color
+    )
+    return frame
+
 def resize_frame(frame, width=None, height=None):
     # Resize only if needed
     if width is None and height is None:
@@ -314,7 +327,11 @@ def start_cap(stream):
                 min_pixels_trigger = width * height * pixel_diff_ratio
                 debug_print("Setting min_pixels_trigger to {}".format(min_pixels_trigger))
             if prev_frame is not None:
-                out_frames[str(src)] = frame.copy()
+                # Update the out_frame
+                if recorder is not None:
+                    out_frames[str(src)] = add_frame_border(frame.copy(), [0,0,255])
+                else:
+                    out_frames[str(src)] = frame.copy()
                 diff_frame = cv2.absdiff(
                         cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY),
                         cv2.cvtColor(prev_frame, cv2.COLOR_BGR2GRAY)
@@ -326,7 +343,6 @@ def start_cap(stream):
                     if recorder is None:
                         recorder = init_record(frame, prefix)
                         rframe_count = record_duration * fps
-            #cv2.imshow('frame {}'.format(src), frame)
             if diff_frame is not None and debug:
                 cv2.imshow('diff {}'.format(prefix), diff_frame)
             if recorder is not None:
