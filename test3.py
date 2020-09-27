@@ -111,6 +111,9 @@ def list_recordings():
     return render_template("list_recordings.html", dir_tree_str=dir_tree_str)
     
 def pathtree2html(path_tree, attr='id="myUL"'):
+    '''
+    generates html from the tree dictionary
+    '''
     result = '<ul {}>'.format(attr)
     for key in path_tree.keys():
         result += "<li>"
@@ -125,6 +128,10 @@ def pathtree2html(path_tree, attr='id="myUL"'):
 
 
 def pathlist2pathtree(path_list):
+    '''
+    Converts a list of absolute path strings
+    to a tree dictionary.
+    '''
     global record_path
     path_tree = {}
     for path in path_list:
@@ -250,19 +257,25 @@ def resize_frame(frame, width=None, height=None):
 def get_video_capture(src):
     global video_cap_retries, width, height, video_cap_sleep
     retries = 0
+    retries_soft = 10
+    retries_sleep = 3 #seconds
     info_print("Connecting to Capture Device...")
     while retries < video_cap_retries:
         cap = cv2.VideoCapture(src)
-        if cap.isOpened():
-            if isinstance(src, int) and width is not None and height is not None:
-                set_capture_res(cap, width, height)
-            info_print("Connected to {} successfully.".format(src))
-            info_print("{} cap res set to {}x{}".format(src, width, height))
-            return cap
+        while retries_soft > 0:
+            retries_soft -= 1
+            if cap.isOpened():
+                if isinstance(src, int) and width is not None and height is not None:
+                    set_capture_res(cap, width, height)
+                info_print("Connected to {} successfully.".format(src))
+                info_print("{} cap res set to {}x{}".format(src, width, height))
+                return cap
+            time.sleep(retries_sleep)
         else:
             retries += 1
             warn_print("Unable to connect to {}".format(src))
             info_print("Retry connection: {}".format(retries))
+            cap.release()
             time.sleep(video_cap_sleep)
     error_print("Permanant failure to connect with {}".format(src))
     exit(1)
