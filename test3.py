@@ -320,6 +320,8 @@ def start_cap(stream):
                 frame = resize_frame(frame, width, height)
         except Exception as e:
             info_print("Lost connection to {}.\nAttempting to reestablish connection...".format(src))
+            if str(src) in out_frames:
+                out_frames[str(src)] = add_frame_border(out_frames[str(src)].copy(), [0,0,255])
             cap = get_video_capture(src)
 
         if status:
@@ -329,7 +331,7 @@ def start_cap(stream):
             if prev_frame is not None:
                 # Update the out_frame
                 if recorder is not None:
-                    out_frames[str(src)] = add_frame_border(frame.copy(), [0,0,255])
+                    out_frames[str(src)] = add_frame_border(frame.copy(), [0,255,0])
                 else:
                     out_frames[str(src)] = frame.copy()
                 diff_frame = cv2.absdiff(
