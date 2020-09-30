@@ -270,10 +270,11 @@ def resize_frame(frame, width=None, height=None):
 def get_video_capture(src):
     global video_cap_retries, width, height, video_cap_sleep
     retries = 0
+    retries_sleep = video_cap_sleep
     retries_soft = 10
-    retries_sleep = 3 #seconds
+    retries_soft_sleep = 3 #seconds
     info_print("Connecting to Capture Device...")
-    while retries < video_cap_retries:
+    while True:
         cap = cv2.VideoCapture(src)
         while retries_soft > 0:
             retries_soft -= 1
@@ -283,13 +284,16 @@ def get_video_capture(src):
                 info_print("Connected to {} successfully.".format(src))
                 info_print("{} cap res set to {}x{}".format(src, width, height))
                 return cap
-            time.sleep(retries_sleep)
+            time.sleep(retries_soft_sleep)
         else:
-            retries += 1
             warn_print("Unable to connect to {}".format(src))
             info_print("Retry connection: {}".format(retries))
             cap.release()
-            time.sleep(video_cap_sleep)
+            if retries > video_cap_retries:
+                time.sleep(300)
+            else:
+                time.sleep(retries_sleep)
+                retries += 1
     error_print("Permanant failure to connect with {}".format(src))
     exit(1)
 
