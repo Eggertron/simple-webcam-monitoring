@@ -293,7 +293,7 @@ def get_video_capture(src):
                 time.sleep(300)
             else:
                 time.sleep(retries_sleep)
-                retries += 1
+            retries += 1
     error_print("Permanant failure to connect with {}".format(src))
     exit(1)
 
@@ -323,6 +323,7 @@ def start_cap(stream):
                 (status, frame) = cap.read()
                 frame = resize_frame(frame, width, height)
         except Exception as e:
+            cap.release()
             info_print("Lost connection to {}.\nAttempting to reestablish connection...".format(src))
             if str(src) in out_frames:
                 out_frames[str(src)] = add_frame_border(out_frames[str(src)].copy(), [0,0,255])
