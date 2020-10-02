@@ -304,7 +304,7 @@ def start_cap(stream):
     pixel_diff_ratio = stream['pixels_diff_ratio']
     fps = stream['fps']
     prefix = stream['name']
-    cap = get_video_capture(src, cv2.CAP_V4L2)
+    cap = get_video_capture(src)
     is_show = True
     sleep_time = 1/fps
     frame = None
