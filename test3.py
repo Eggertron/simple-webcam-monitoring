@@ -275,7 +275,7 @@ def get_video_capture(src):
     retries_soft_sleep = 3 #seconds
     info_print("Connecting to Capture Device...")
     while True:
-        cap = cv2.VideoCapture(src)
+        cap = cv2.VideoCapture(src, cv2.CAP_V4L2)
         while retries_soft > 0:
             retries_soft -= 1
             if cap.isOpened():
@@ -304,7 +304,7 @@ def start_cap(stream):
     pixel_diff_ratio = stream['pixels_diff_ratio']
     fps = stream['fps']
     prefix = stream['name']
-    cap = get_video_capture(src)
+    cap = get_video_capture(src, cv2.CAP_V4L2)
     is_show = True
     sleep_time = 1/fps
     frame = None
