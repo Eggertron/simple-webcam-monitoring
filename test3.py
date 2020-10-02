@@ -275,7 +275,7 @@ def get_video_capture(src):
     retries_soft_sleep = 3 #seconds
     info_print("Connecting to Capture Device...")
     while True:
-        cap = cv2.VideoCapture(src, cv2.CAP_V4L2)
+        cap = cv2.VideoCapture(src)
         while retries_soft > 0:
             retries_soft -= 1
             if cap.isOpened():
@@ -285,9 +285,9 @@ def get_video_capture(src):
                 info_print("{} cap res set to {}x{}".format(src, width, height))
                 return cap
             time.sleep(retries_soft_sleep)
+        cap.release()
         warn_print("Unable to connect to {}".format(src))
         info_print("Retry connection: {}".format(retries))
-        cap.release()
         if retries > video_cap_retries:
             time.sleep(300)
         else:
@@ -323,6 +323,8 @@ def start_cap(stream):
                 frame = resize_frame(frame, width, height)
         except Exception as e:
             cap.release()
+            if recorder is not None:
+                record_frame(recorder, frame, True)
             info_print("Lost connection to {}.\nAttempting to reestablish connection...".format(src))
             if str(src) in out_frames:
                 out_frames[str(src)] = add_frame_border(out_frames[str(src)].copy(), [0,0,255])
