@@ -285,15 +285,14 @@ def get_video_capture(src):
                 info_print("{} cap res set to {}x{}".format(src, width, height))
                 return cap
             time.sleep(retries_soft_sleep)
+        warn_print("Unable to connect to {}".format(src))
+        info_print("Retry connection: {}".format(retries))
+        cap.release()
+        if retries > video_cap_retries:
+            time.sleep(300)
         else:
-            warn_print("Unable to connect to {}".format(src))
-            info_print("Retry connection: {}".format(retries))
-            cap.release()
-            if retries > video_cap_retries:
-                time.sleep(300)
-            else:
-                time.sleep(retries_sleep)
-            retries += 1
+            time.sleep(retries_sleep)
+        retries += 1
     error_print("Permanant failure to connect with {}".format(src))
     exit(1)
 
