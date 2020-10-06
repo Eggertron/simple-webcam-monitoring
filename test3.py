@@ -115,7 +115,7 @@ def pathtree2html(path_tree, attr='id="myUL"'):
     generates html from the tree dictionary
     '''
     result = '<ul {}>'.format(attr)
-    for key in path_tree.keys():
+    for key in sorted(path_tree):
         result += "<li>"
         if key.endswith("mp4"):
             result += '<a href="/download?file={}">{}</a></li>'.format(key, key)
@@ -267,7 +267,7 @@ def resize_frame(frame, width=None, height=None):
         debug_print("Resizing frame to {}x{}".format(new_width, height))
         return cv2.resize(frame, (new_width, height), interpolation=cv2.INTER_LINEAR)
 
-def get_video_capture(src):
+def get_video_capture(src, cap=None):
     global video_cap_retries, width, height, video_cap_sleep
     retries = 0
     retries_sleep = video_cap_sleep
@@ -275,7 +275,8 @@ def get_video_capture(src):
     retries_soft_sleep = 3 #seconds
     info_print("Connecting to Capture Device...")
     while True:
-        cap = cv2.VideoCapture(src)
+        if cap is None:
+            cap = cv2.VideoCapture(src)
         while retries_soft > 0:
             retries_soft -= 1
             if cap.isOpened():
@@ -322,13 +323,12 @@ def start_cap(stream):
                 (status, frame) = cap.read()
                 frame = resize_frame(frame, width, height)
         except Exception as e:
-            cap.release()
             if recorder is not None:
                 record_frame(recorder, frame, True)
             info_print("Lost connection to {}.\nAttempting to reestablish connection...".format(src))
             if str(src) in out_frames:
                 out_frames[str(src)] = add_frame_border(out_frames[str(src)].copy(), [0,0,255])
-            cap = get_video_capture(src)
+            cap = get_video_capture(src, cap)
 
         if status:
             if min_pixels_trigger is None:
