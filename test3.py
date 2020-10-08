@@ -328,7 +328,7 @@ def start_cap(stream):
         except Exception as e:
             if recorder is not None:
                 record_frame(recorder, frame, True)
-            info_print("Lost connection to {}.\nAttempting to reestablish connection...".format(src))
+            info_print("Lost connection to {}.\nAttempting to reestablish connection...\n{}".format(src,e))
             if str(src) in out_frames:
                 out_frames[str(src)] = add_frame_border(out_frames[str(src)].copy(), [0,0,255])
             cap = get_video_capture(src, cap)
