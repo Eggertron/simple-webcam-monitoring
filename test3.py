@@ -191,8 +191,9 @@ def storage_rotate(prefix):
     global record_path, storage_min_bytes
     '''check storage space and delete old videos'''
     bytes_free = shutil.disk_usage(record_path).free
-    if bytes_free < storage_min_bytes:
+    while bytes_free < storage_min_bytes:
         delete_old_video(prefix)
+        bytes_free = shutil.disk_usage(record_path).free
 
 def delete_old_video(prefix):
     global record_path
