@@ -273,7 +273,7 @@ def get_video_capture(src, cap=None):
     retries = 0
     retries_sleep = video_cap_sleep
     retries_soft = 10
-    retries_soft_sleep = 3 #seconds
+    retries_soft_sleep = 10 #seconds
     info_print("Connecting to Capture Device...")
     while True:
         if cap is None:
@@ -293,6 +293,7 @@ def get_video_capture(src, cap=None):
         info_print("Retry connection: {}".format(retries))
         if retries > video_cap_retries:
             time.sleep(300)
+            exit(1)
         else:
             time.sleep(retries_sleep)
         retries += 1
