@@ -288,6 +288,7 @@ def get_video_capture(src, cap=None):
                 return cap
             time.sleep(retries_soft_sleep)
         cap.release()
+        retries_soft = 10
         warn_print("Unable to connect to {}".format(src))
         info_print("Retry connection: {}".format(retries))
         if retries > video_cap_retries:
