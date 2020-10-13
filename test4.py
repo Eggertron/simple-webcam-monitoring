@@ -274,7 +274,7 @@ def get_video_capture(src, cap=None):
     retries_sleep = video_cap_sleep
     retries_soft = 10
     retries_soft_sleep = 10 #seconds
-    info_print("Connecting to Capture Device...")
+    info_print("Connecting to Capture Device {}...".format(src))
     while True:
         if cap is None:
             cap = cv2.VideoCapture(src)
@@ -378,11 +378,12 @@ def start_cap(stream):
         time.sleep(sleep_time) # fps sleep
 
 def thread_watch(stream):
-    debug_print("Enter Thread Watchdog")
+    info_print("Enter Thread Watchdog")
     while True:
-        p = threading.Thread(target=start_cap, args=(stream,)).start()
+        p = threading.Thread(target=start_cap, args=(stream,))
+        p.start()
         p.join()
-        debug_print("Restarting Thread")
+        info_print("Restarting Thread")
 
 if __name__ == "__main__":
     for stream in streams:
