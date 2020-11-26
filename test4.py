@@ -277,7 +277,11 @@ def get_video_capture(src, cap=None):
     info_print("Connecting to Capture Device {}...".format(src))
     while True:
         if cap is None:
-            cap = cv2.VideoCapture(src)
+            if "rtsp" in src:
+                os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp" 
+                cap = cv2.VideoCapture(src, cv2.CAP_FFMPEG)
+            else:
+                cap = cv2.VideoCapture(src)
         while retries_soft > 0:
             retries_soft -= 1
             if cap.isOpened():
