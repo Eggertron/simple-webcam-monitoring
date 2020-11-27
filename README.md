@@ -41,7 +41,42 @@ exported to be detected by OpenCV
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pyenv prefix)/lib
 ```
 
-## Raspberry Pi Webcam Server over VLC
+## Raspberry Pi Webcam Server over VCL HTTP MJPG
+Create a script `start_webcam_stream.sh` with the following line
+```
+ cvlc v412:///dev/video0 --v4l2-width 320 --v4l2-height 240 --v4l2-fps 5 --sout '#transcode{vcodec=mjpg}:std{access=http,mux=mpjpeg,dst=<IP>:<PORT>}'
+```
+make that script executable
+```
+chmod +x start_webcam_stream.sh
+```
+Create a Systemd service script to for your new script
+```
+sudo vi /etc/systemd/system/webcam-server.service
+```
+add the following to the service script
+```
+[Unit]
+Description=Webcam HTTP Mjpg Server Only
+After=network.target
+
+[Service]
+PIDFile=/run/webcam-server.pid
+ExecStart=/home/pi/start_webcam_stream.sh
+ExecStop=/bin/kill -s QUIT $MAINPID
+User=pi
+Group=pi
+
+[Install]
+WantedBy=multi-user.target
+```
+Make sure to point the `ExecStart=` to the correct path of your script.
+Start your script
+```
+sudo systemctl enable webcam-server && sudo systemctl start webcam-server
+```
+
+## Raspberry Pi Webcam Server over VLC RTP
 ```
 cvlc -vv v4l2:///dev/video0:chroma=mp2v --v4l2-width 320 --v4l2-height 240 --sout '#transcode{vcodec=mp2v,acodec=mpga,fps=30}:rtp{mux=ts,sdp=rtsp://:8888/live.sdp}'
 ```
