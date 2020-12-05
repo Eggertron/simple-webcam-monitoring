@@ -44,7 +44,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pyenv prefix)/lib
 ## Raspberry Pi Webcam Server over VCL HTTP MJPG
 Create a script `start_webcam_stream.sh` with the following line
 ```
- cvlc v412:///dev/video0 --v4l2-width 320 --v4l2-height 240 --v4l2-fps 5 --sout '#transcode{vcodec=mjpg}:std{access=http,mux=mpjpeg,dst=<IP>:<PORT>}'
+ cvlc v412:///dev/video0 --v4l2-width 320 --v4l2-height 240 --v4l2-fps 3 --sout '#transcode{vcodec=mjpg,fps=3}:std{access=http,mux=mpjpeg,dst=<IP>:<PORT>}'
 ```
 make that script executable
 ```
